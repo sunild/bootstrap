@@ -98,7 +98,8 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
           'content="{{tt_content}}" '+
           'placement="{{tt_placement}}" '+
           'animation="tt_animation()" '+
-          'is-open="tt_isOpen"'+
+          'is-open="tt_isOpen" '+
+          'template="{{tt_template}}"'+
           '>'+
         '</'+ directiveName +'-popup>';
 
@@ -267,6 +268,10 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
             }
           });
 
+          attrs.$observe( prefix+'Template', function ( val ) {
+            scope.tt_template = val;
+          });
+
           // if a tooltip is attached to <body> we need to remove it on
           // location change as its parent scope will probably not be destroyed
           // by the change.
@@ -315,4 +320,28 @@ angular.module( 'ui.bootstrap.tooltip', [ 'ui.bootstrap.position' ] )
 
 .directive( 'tooltipHtmlUnsafe', [ '$tooltip', function ( $tooltip ) {
   return $tooltip( 'tooltipHtmlUnsafe', 'tooltip', 'mouseenter' );
-}]);
+}])
+
+/**
+ * Loads the provided template via $http, attaches it to the current element,
+ * and compiles it relative to a new sibling scope.
+ *
+ * For internal use only!
+ */
+.directive( 'ttLoadTemplateInSibling', [ '$http', '$templateCache', '$compile', function ( $http, $templateCache, $compile ) {
+  return {
+    link: function ( scope, element, attrs ) {
+      var templateScope = scope.$parent.$new();
+      
+      attrs.$observe( 'ttLoadTemplateInSibling', function ( val ) {
+        $http.get( val, { cache: $templateCache } )
+        .then( function( response ) {
+          element.html( response.data );
+          $compile( element.contents() )( templateScope );
+        });
+      });
+    }
+  };
+}])
+
+;
